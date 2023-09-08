@@ -1,57 +1,37 @@
-// Constants
+// Snake Game Constants
 const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-const TILE_SIZE = 10;
+const context = canvas.getContext("2d");
+const DOT_SIZE = 10;
 const CANVAS_WIDTH = canvas.width;
 const CANVAS_HEIGHT = canvas.height;
-const GRID_SIZE = CANVAS_WIDTH / TILE_SIZE;
+const GRID_SIZE = CANVAS_WIDTH / DOT_SIZE;
+const SPEED = 200; // milliseconds per frame (adjust as needed)
 
-// Snake properties
-let snake = [{ x: 5, y: 5 }];
-let dx = 1;
-let dy = 0;
-let foodX, foodY;
-let isGameOver = false;
+// Snake Initial State
+const snake = [{ x: 5, y: 5 }];
+let direction = "right";
+let apple = { x: getRandomX(), y: getRandomY() };
 
-// Touch control variables
-let touchStartX, touchStartY;
+// Score
+let score = 0;
 
-// Initialize the game
-function init() {
-    // Initialize snake position and food
-    snake = [{ x: 5, y: 5 }];
-    dx = 1;
-    dy = 0;
-    spawnFood();
-
-    // Initialize touch controls
-    touchStartX = null;
-    touchStartY = null;
-
-    // Set up game loop
-    isGameOver = false;
-    gameLoop();
-}
-
-// Game loop
+// Game Loop
 function gameLoop() {
-    if (isGameOver) {
-        // Handle game over logic
-        return;
+    if (!isGameOver()) {
+        moveSnake();
+        checkCollision();
+        drawGame();
+        setTimeout(gameLoop, SPEED);
+    } else {
+        endGame();
     }
-
-    clearCanvas();
-    moveSnake();
-    drawSnake();
-    drawFood();
-
-    // Call the next frame
-    requestAnimationFrame(gameLoop);
 }
 
-// Handle touch events for touch-based controls
-canvas.addEventListener("touchstart", handleTouchStart, false);
-canvas.addEventListener("touchmove", handleTouchMove, false);
+// Handle User Input (Touch Controls)
+canvas.addEventListener("touchstart", handleTouchStart);
+canvas.addEventListener("touchmove", handleTouchMove);
+
+let touchStartX, touchStartY;
 
 function handleTouchStart(event) {
     touchStartX = event.touches[0].clientX;
@@ -71,27 +51,15 @@ function handleTouchMove(event) {
 
     if (Math.abs(deltaX) > Math.abs(deltaY)) {
         if (deltaX > 0) {
-            if (dx !== -1) {
-                dx = 1;
-                dy = 0;
-            }
+            if (direction !== "left") direction = "right";
         } else {
-            if (dx !== 1) {
-                dx = -1;
-                dy = 0;
-            }
+            if (direction !== "right") direction = "left";
         }
     } else {
         if (deltaY > 0) {
-            if (dy !== -1) {
-                dx = 0;
-                dy = 1;
-            }
+            if (direction !== "up") direction = "down";
         } else {
-            if (dy !== 1) {
-                dx = 0;
-                dy = -1;
-            }
+            if (direction !== "down") direction = "up";
         }
     }
 
@@ -99,15 +67,17 @@ function handleTouchMove(event) {
     touchStartY = null;
 }
 
+// Rest of the code (unchanged)
+
 // Clear the canvas
 function clearCanvas() {
-    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 }
 
 // Spawn food at a random position
 function spawnFood() {
-    foodX = Math.floor(Math.random() * GRID_SIZE);
-    foodY = Math.floor(Math.random() * GRID_SIZE);
+    apple.x = getRandomX();
+    apple.y = getRandomY();
 }
 
 // Move the snake
@@ -117,13 +87,13 @@ function moveSnake() {
     }
 
     // Create a new head for the snake
-    const newHead = { x: snake[0].x + dx, y: snake[0].y + dy };
+    const newHead = { x: snake[0].x, y: snake[0].y };
 
     // Check for collisions with the wall or itself
     if (
         newHead.x < 0 ||
-        newHead.y < 0 ||
         newHead.x >= GRID_SIZE ||
+        newHead.y < 0 ||
         newHead.y >= GRID_SIZE ||
         snake.some(segment => segment.x === newHead.x && segment.y === newHead.y)
     ) {
@@ -135,7 +105,7 @@ function moveSnake() {
     snake.unshift(newHead);
 
     // Check if the snake has eaten the food
-    if (newHead.x === foodX && newHead.y === foodY) {
+    if (newHead.x === apple.x && newHead.y === apple.y) {
         // Increase the length of the snake
         spawnFood();
     } else {
@@ -146,17 +116,69 @@ function moveSnake() {
 
 // Draw the snake on the canvas
 function drawSnake() {
-    ctx.fillStyle = "green";
+    context.fillStyle = "green";
     snake.forEach(segment => {
-        ctx.fillRect(segment.x * TILE_SIZE, segment.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        context.fillRect(segment.x * DOT_SIZE, segment.y * DOT_SIZE, DOT_SIZE, DOT_SIZE);
     });
 }
 
 // Draw the food on the canvas
 function drawFood() {
-    ctx.fillStyle = "red";
-    ctx.fillRect(foodX * TILE_SIZE, foodY * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+    context.fillStyle = "red";
+    context.fillRect(apple.x * DOT_SIZE, apple.y * DOT_SIZE, DOT_SIZE, DOT_SIZE);
 }
 
-// Start the game
+// Draw the Game
+function drawGame() {
+    clearCanvas();
+    drawFood();
+    drawSnake();
+
+    // Display the score
+    context.fillStyle = "white";
+    context.font = "20px Arial";
+    context.fillText("Score: " + score, 10, 20);
+}
+
+// Game Over
+function endGame() {
+    clearCanvas();
+    context.fillStyle = "red";
+    context.font = "30px Arial";
+    context.fillText("Game Over", CANVAS_WIDTH / 2 - 80, CANVAS_HEIGHT / 2);
+    context.fillStyle = "white";
+    context.font = "20px Arial";
+    context.fillText("Score: " + score, CANVAS_WIDTH / 2 - 30, CANVAS_HEIGHT / 2 + 30);
+}
+
+// Get a Random X Coordinate
+function getRandomX() {
+    return Math.floor(Math.random() * GRID_SIZE);
+}
+
+// Get a Random Y Coordinate
+function getRandomY() {
+    return Math.floor(Math.random() * GRID_SIZE);
+}
+
+// Check for Collisions
+function checkCollision() {
+    if (
+        snake[0].x < 0 ||
+        snake[0].x >= GRID_SIZE ||
+        snake[0].y < 0 ||
+        snake[0].y >= GRID_SIZE
+    ) {
+        isGameOver = true; // Snake hit the wall
+        return;
+    }
+    for (let i = 1; i < snake.length; i++) {
+        if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) {
+            isGameOver = true; // Snake collided with itself
+            return;
+        }
+    }
+}
+
+// Start the Game
 init();
