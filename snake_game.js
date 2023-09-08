@@ -5,7 +5,7 @@ const DOT_SIZE = 10;
 const CANVAS_WIDTH = canvas.width;
 const CANVAS_HEIGHT = canvas.height;
 const GRID_SIZE = CANVAS_WIDTH / DOT_SIZE;
-const SPEED = 200; // milliseconds per frame (adjust as needed)
+const SPEED = 1000; // milliseconds per frame (adjust as needed)
 
 // Snake Initial State
 const snake = [{ x: 5, y: 5 }];
